@@ -22,66 +22,76 @@
   .status {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     min-height: 46px; padding: 10px 14px; border-radius: 10px; margin: 0 0 18px;
-    background: #1b2030; border: 1px solid #232a36; font-size: 15px;
+    background: #1b2030; border: 1px solid #232a36; font-size: 14px; color: #9aa4b2;
   }
   .status.ok   { background: #10261a; border-color: #1f5235; color: #7ee2a8; }
-  .status.warn { background: #2a1d12; border-color: #5a3a1c; color: #ffce8a; }
   .spinner {
     width: 16px; height: 16px; border: 2px solid #3a4456; border-top-color: #7aa2ff;
-    border-radius: 50%; animation: spin .8s linear infinite;
+    border-radius: 50%; animation: spin .8s linear infinite; flex: none;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   a.btn {
-    display: block; text-decoration: none; background: #3b6cff; color: #fff;
-    font-weight: 600; padding: 14px; border-radius: 12px; font-size: 17px;
+    display: block; text-decoration: none; font-weight: 600; padding: 14px;
+    border-radius: 12px; font-size: 17px; margin-top: 10px;
   }
-  a.btn:active { background: #2f57d6; }
-  .host { margin: 16px 0 0; color: #6b7484; font-size: 12px; word-break: break-all; }
+  a.primary   { background: #3b6cff; color: #fff; }
+  a.primary:active { background: #2f57d6; }
+  a.secondary { background: #222a39; color: #cfd7e3; border: 1px solid #2e3850; }
+  a.secondary:active { background: #2b3447; }
+  .label { display:block; font-size: 12px; font-weight: 500; opacity: .75; margin-top: 2px; }
+  .host { margin: 18px 0 0; color: #6b7484; font-size: 12px; word-break: break-all; }
 </style>
 </head>
 <body>
   <div class="card">
     <h1>Home Hub</h1>
-    <p class="sub">Reachable only over your Tailscale tailnet.</p>
+    <p class="sub">Open it whichever way you're connected.</p>
 
     <div id="status" class="status">
       <span class="spinner"></span>
-      <span id="statusText">Checking connection&hellip;</span>
+      <span id="statusText">Checking tailnet&hellip;</span>
     </div>
 
-    <a class="btn" id="openBtn" href="https://pizw.tail336f02.ts.net/">Open Hub</a>
+    <a class="btn primary" href="http://10.0.0.248:5000/">
+      At home (Wi-Fi)
+      <span class="label">no Tailscale needed</span>
+    </a>
+    <a class="btn secondary" href="https://pizw.tail336f02.ts.net/">
+      Away (Tailscale)
+      <span class="label">turn Tailscale on first</span>
+    </a>
 
-    <p class="host">pizw.tail336f02.ts.net</p>
+    <p class="host">LAN 10.0.0.248:5000 · tailnet pizw.tail336f02.ts.net</p>
   </div>
 
 <script>
-  // The hub is tailnet-only (Tailscale Serve). When Tailscale is OFF the request
-  // never reaches it, so this always-public page reminds you why and links in.
-  // Probe is fail-safe: fetch only RESOLVES when the hub actually answers
-  // (Tailscale on) -> auto-open. Any failure (off / timeout / DNS) REJECTS ->
-  // we show the reminder. A misfire can never wrongly redirect you into a
-  // browser error page.
-  var HUB = "https://pizw.tail336f02.ts.net/";
+  // The hub has two front doors:
+  //   • Home Wi-Fi → http LAN IP (Tailscale off; everyone in the house)
+  //   • Away       → https tailnet name (Tailscale on; trusted cert)
+  // This page is served over HTTPS, so it CAN'T probe the http LAN address
+  // (mixed content) — but it CAN probe the https tailnet hub. So: if the
+  // tailnet is reachable, auto-open it; otherwise just leave both buttons.
+  // The "At home" button is shown immediately, so home users tap it without
+  // waiting for the probe. The probe is fail-safe: it only auto-opens on a
+  // positive response, never redirects on failure.
+  var TAILNET = "https://pizw.tail336f02.ts.net/";
   var statusEl = document.getElementById("status");
   var textEl = document.getElementById("statusText");
-
-  function show(kind, msg) {
-    statusEl.className = "status " + kind;
-    textEl.textContent = msg;
-  }
 
   var ctrl = new AbortController();
   var timer = setTimeout(function () { ctrl.abort(); }, 4000);
 
-  fetch(HUB, { mode: "no-cors", cache: "no-store", signal: ctrl.signal })
+  fetch(TAILNET, { mode: "no-cors", cache: "no-store", signal: ctrl.signal })
     .then(function () {
       clearTimeout(timer);
-      show("ok", "Tailscale on — opening hub…");
-      setTimeout(function () { window.location.replace(HUB); }, 700);
+      statusEl.className = "status ok";
+      textEl.textContent = "Tailscale on — opening hub…";
+      setTimeout(function () { window.location.replace(TAILNET); }, 700);
     })
     .catch(function () {
       clearTimeout(timer);
-      show("warn", "Can’t reach the hub. Turn ON Tailscale, then tap Open Hub.");
+      statusEl.innerHTML =
+        "On home Wi‑Fi? Tap <b>At home</b>. Away? Turn on Tailscale, then <b>Away</b>.";
     });
 </script>
 </body>
