@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Home Hub</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    font: 17px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0b0d12; color: #e7ebf0; padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 420px; background: #151922; border: 1px solid #232a36;
+    border-radius: 16px; padding: 28px 24px; text-align: center;
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .sub { color: #9aa4b2; margin: 0 0 20px; font-size: 15px; }
+  .status {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 46px; padding: 10px 14px; border-radius: 10px; margin: 0 0 18px;
+    background: #1b2030; border: 1px solid #232a36; font-size: 15px;
+  }
+  .status.ok   { background: #10261a; border-color: #1f5235; color: #7ee2a8; }
+  .status.warn { background: #2a1d12; border-color: #5a3a1c; color: #ffce8a; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid #3a4456; border-top-color: #7aa2ff;
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  a.btn {
+    display: block; text-decoration: none; background: #3b6cff; color: #fff;
+    font-weight: 600; padding: 14px; border-radius: 12px; font-size: 17px;
+  }
+  a.btn:active { background: #2f57d6; }
+  .host { margin: 16px 0 0; color: #6b7484; font-size: 12px; word-break: break-all; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Home Hub</h1>
+    <p class="sub">Reachable only over your Tailscale tailnet.</p>
+
+    <div id="status" class="status">
+      <span class="spinner"></span>
+      <span id="statusText">Checking connection&hellip;</span>
+    </div>
+
+    <a class="btn" id="openBtn" href="https://pizw.tail336f02.ts.net/">Open Hub</a>
+
+    <p class="host">pizw.tail336f02.ts.net</p>
+  </div>
+
+<script>
+  // The hub is tailnet-only (Tailscale Serve). When Tailscale is OFF the request
+  // never reaches it, so this always-public page reminds you why and links in.
+  // Probe is fail-safe: fetch only RESOLVES when the hub actually answers
+  // (Tailscale on) -> auto-open. Any failure (off / timeout / DNS) REJECTS ->
+  // we show the reminder. A misfire can never wrongly redirect you into a
+  // browser error page.
+  var HUB = "https://pizw.tail336f02.ts.net/";
+  var statusEl = document.getElementById("status");
+  var textEl = document.getElementById("statusText");
+
+  function show(kind, msg) {
+    statusEl.className = "status " + kind;
+    textEl.textContent = msg;
+  }
+
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () { ctrl.abort(); }, 4000);
+
+  fetch(HUB, { mode: "no-cors", cache: "no-store", signal: ctrl.signal })
+    .then(function () {
+      clearTimeout(timer);
+      show("ok", "Tailscale on — opening hub…");
+      setTimeout(function () { window.location.replace(HUB); }, 700);
+    })
+    .catch(function () {
+      clearTimeout(timer);
+      show("warn", "Can’t reach the hub. Turn ON Tailscale, then tap Open Hub.");
+    });
+</script>
+</body>
+</html>
