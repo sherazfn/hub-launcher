@@ -56,12 +56,12 @@
       At home (Wi-Fi)
       <span class="label">no Tailscale needed</span>
     </a>
-    <a class="btn secondary" href="https://pizw.tail336f02.ts.net/">
+    <a class="btn secondary" href="https://pizw.tail336f02.ts.net:8443/">
       Away (Tailscale)
       <span class="label">turn Tailscale on first</span>
     </a>
 
-    <p class="host">LAN 10.0.0.248:5000 · tailnet pizw.tail336f02.ts.net</p>
+    <p class="host">LAN 10.0.0.248:5000 · tailnet pizw.tail336f02.ts.net:8443</p>
   </div>
 
 <script>
@@ -74,7 +74,7 @@
   // The "At home" button is shown immediately, so home users tap it without
   // waiting for the probe. The probe is fail-safe: it only auto-opens on a
   // positive response, never redirects on failure.
-  var TAILNET = "https://pizw.tail336f02.ts.net/";
+  var TAILNET = "https://pizw.tail336f02.ts.net:8443/";
   var statusEl = document.getElementById("status");
   var textEl = document.getElementById("statusText");
 
